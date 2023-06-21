@@ -1,1 +1,53 @@
+public class googlecalendareventHandler {
+      @future (callout=true)
+     public static void googlecalendarevent(string eventId)
+     {
+         List<Event> eventRecord = new List<Event>([SELECT Id,isalldayevent,Subject,StartDateTime,EndDateTime,Description,Location FROM Event WHERE id =: eventId LIMIT 1]);
+         DateTime sdt = eventRecord[0].StartDateTime;
+         Date startDate = date.newinstance(sdt.year(), sdt.month(), sdt.day());
+         DateTime edt = eventRecord[0].EndDateTime;
+         Date endDate = date.newinstance(edt.year(), edt.month(), edt.day());
+         String body = '{   "description": "'+eventRecord[0].Description+'",   "start": {     "date": "'+string.valueOf(startDate)+'",     "timeZone": "America/Los_Angeles"   },   "end": {     "date": "'+string.valueOf(endDate)+'",     "timeZone": "America/Los_Angeles"   },   "location": "'+eventRecord[0].Location+'",   "visibility": "public",   "transparency": "opaque",   "status": "confirmed",   "summary": "'+eventRecord[0].Subject+'",   "reminders": {     "useDefault": true   } }';
+         Http http = new Http();
+         HttpRequest httpReq = new HttpRequest();
+         HttpResponse HttpRes = new HttpResponse();
+         httpreq.setendpoint('callout:Google_Calendar'+'/satyam@hicglobalsolutions.com/events');// satyam@hicglobalsolution.com is a calander id
+         httpReq.setMethod('POST');
+         httpReq.setBody(body );
+         httpReq.setHeader('Content-Type', 'application/json');
+         HttpRes = http.send(httpReq);
+         system.debug('resp - '+HttpRes);
+           // Send the request to create the event in Google Calendar
+         HttpResponse response = http.send(httpreq);
+         // Handle the response as needed
+         if (response.getStatusCode() == 200) {
+             System.debug('Event created successfully in Google Calendar');
+         } else {
+             System.debug('Failed to create event in Google Calendar. Response: ' + response.getBody());
+         }
+     }
+ }
+=======================================================================================================================================================================
+trigger googlecalendarevent on Event (after insert, after update) {
+     string eventId='';
+     if(trigger.isInsert && Trigger.isAfter){
+         for (Event events : Trigger.new) {
+             eventId= events.Id;
+         }
+         if(eventId!= null && eventId!=''){
+           googlecalendareventHandler.googlecalendarevent(eventId);  
+         }
+     }
+ }
+======================================================================================================================================================
+TEU- https://accounts.google.com/o/oauth2/token
 
+AEU - https://accounts.google.com/o/oauth2/auth?access_type=offline&approval_prompt=force
+
+
+CBU- https://itsengineeringcollege7-dev-ed.my.salesforce.com/services/authcallback/Google_Calendar
+
+DS- https://www.googleapis.com/auth/calendar
+
+https://www.googleapis.com/calendar/v3/calendars/
+=================================================================================================================================================
